@@ -10,7 +10,7 @@ import {
     type ColumnFiltersState,
     type SortingState,
 } from '@tanstack/react-table';
-import { useNavigate } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -118,16 +118,17 @@ function getTipo(record: OacRecord): string {
     return '—';
 }
 
+const tipoBadgeStyles: Record<string, string> = {
+    SAC: 'border-blue-600/30 text-blue-600',
+    OT: 'border-purple-600/30 text-purple-600',
+    Reclamo: 'border-orange-600/30 text-orange-600',
+    Incidencia: 'border-cyan-600/30 text-cyan-600',
+    Derivada: 'border-pink-600/30 text-pink-600',
+};
+
 function TipoBadge({ tipo }: { tipo: string }) {
-    const styles: Record<string, string> = {
-        SAC: 'border-blue-600/30 text-blue-600',
-        OT: 'border-purple-600/30 text-purple-600',
-        Reclamo: 'border-orange-600/30 text-orange-600',
-        Incidencia: 'border-cyan-600/30 text-cyan-600',
-        Derivada: 'border-pink-600/30 text-pink-600',
-    };
     return (
-        <Badge variant="outline" className={styles[tipo] || 'text-muted-foreground'}>
+        <Badge variant="outline" className={tipoBadgeStyles[tipo] || 'text-muted-foreground'}>
             {tipo}
         </Badge>
     );
@@ -156,19 +157,14 @@ const columns: ColumnDef<OacRecord>[] = [
         id: 'identificador',
         header: 'Identificador',
         accessorFn: (row) => getIdentificador(row),
-        cell: ({ row }) => {
-            const navigate = useNavigate();
-            return (
-                <Button
-                    variant="link"
-                    className="text-foreground w-fit px-0 text-left font-medium"
-                    onClick={() =>
-                        navigate({ to: '/history/$id', params: { id: String(row.original.id) } })
-                    }>
-                    {getIdentificador(row.original)}
-                </Button>
-            );
-        },
+        cell: ({ row }) => (
+            <Link
+                to="/history/$id"
+                params={{ id: String(row.original.id) }}
+                className="text-foreground w-fit px-0 text-left font-medium hover:underline">
+                {getIdentificador(row.original)}
+            </Link>
+        ),
         enableHiding: false,
     },
     {

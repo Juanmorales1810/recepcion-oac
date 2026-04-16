@@ -4,6 +4,7 @@ import { RouterProvider, createRouter } from '@tanstack/react-router';
 import { routeTree } from './routeTree.gen';
 import '@/styles/index.css';
 import { ThemeProvider } from './components/theme-provider';
+import { invoke } from '@tauri-apps/api/core';
 
 const router = createRouter({ routeTree });
 
@@ -20,3 +21,11 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
         </ThemeProvider>
     </React.StrictMode>
 );
+
+// Cerrar splash y mostrar ventana principal después del primer render de React.
+// Se usa requestAnimationFrame para esperar a que el frame se pinte en pantalla.
+requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+        invoke('close_splashscreen');
+    });
+});

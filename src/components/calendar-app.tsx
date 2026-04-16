@@ -11,7 +11,7 @@ import {
     eachDayOfInterval,
     isWeekend,
 } from 'date-fns';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import {
     type CalendarEvent,
@@ -180,17 +180,19 @@ const sampleOacMap = buildSampleOacMap();
 export default function CalendarApp() {
     const [events, setEvents] = useState<CalendarEvent[]>(sampleEvents);
 
-    const handleEventAdd = (event: CalendarEvent) => {
-        setEvents([...events, event]);
-    };
+    const handleEventAdd = useCallback((event: CalendarEvent) => {
+        setEvents((prev) => [...prev, event]);
+    }, []);
 
-    const handleEventUpdate = (updatedEvent: CalendarEvent) => {
-        setEvents(events.map((event) => (event.id === updatedEvent.id ? updatedEvent : event)));
-    };
+    const handleEventUpdate = useCallback((updatedEvent: CalendarEvent) => {
+        setEvents((prev) =>
+            prev.map((event) => (event.id === updatedEvent.id ? updatedEvent : event))
+        );
+    }, []);
 
-    const handleEventDelete = (eventId: string) => {
-        setEvents(events.filter((event) => event.id !== eventId));
-    };
+    const handleEventDelete = useCallback((eventId: string) => {
+        setEvents((prev) => prev.filter((event) => event.id !== eventId));
+    }, []);
 
     return (
         <EventCalendar
