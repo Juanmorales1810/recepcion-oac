@@ -26,6 +26,7 @@ export type OacRecord = {
     motivo_reclamo: string | null;
     descripcion_falla: string | null;
     ubicacion_falla: string | null;
+    codigo_falla: string | null;
     codigo_trabajo: string | null;
     tipo_instalacion: string | null;
     elementos_afectados: string | null;
