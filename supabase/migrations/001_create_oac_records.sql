@@ -46,7 +46,7 @@ create table if not exists public.oac_records (
   fecha text,
   usuario_nombre text,
   suministro_nro text,
-  tipo_orden text
+  tipo_orden text,
 
   -- Ubicación
   direccion text,
