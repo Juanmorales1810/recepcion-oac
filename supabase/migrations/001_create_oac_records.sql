@@ -21,7 +21,7 @@ create table if not exists public.oac_records (
 
   -- Estado de carga al endpoint externo
   estado_carga text not null default 'pendiente'
-    check (estado_carga in ('pendiente', 'enviado', 'error_carga')),
+    check (estado_carga in ('pendiente', 'enviado', 'error_carga', 'revisar')),
 
   -- Sellado del PDF (null = no sellado)
   sellado text default null
@@ -60,6 +60,7 @@ create table if not exists public.oac_records (
   motivo_reclamo text,
   descripcion_falla text,
   ubicacion_falla text,
+  codigo_falla text,
   codigo_trabajo text,
   tipo_instalacion text,
   elementos_afectados text,

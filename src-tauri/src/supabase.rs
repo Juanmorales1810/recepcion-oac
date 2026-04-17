@@ -31,6 +31,41 @@ pub async fn save_to_supabase(
     Ok(())
 }
 
+/// Checks if a `numero_reclamo` already exists in the database.
+pub async fn existe_numero_reclamo(
+    client: &reqwest::Client,
+    supabase_url: &str,
+    supabase_key: &str,
+    numero_reclamo: &str,
+) -> Result<bool, String> {
+    let url = format!(
+        "{}/rest/v1/oac_records?numero_reclamo=eq.{}&select=id&limit=1",
+        supabase_url.trim_end_matches('/'),
+        numero_reclamo
+    );
+
+    let response = client
+        .get(&url)
+        .header("apikey", supabase_key)
+        .header("Authorization", format!("Bearer {}", supabase_key))
+        .send()
+        .await
+        .map_err(|e| format!("Error de red Supabase: {}", e))?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let text = response.text().await.unwrap_or_default();
+        return Err(format!("Supabase {} - {}", status, text));
+    }
+
+    let rows: Vec<serde_json::Value> = response
+        .json()
+        .await
+        .map_err(|e| format!("Error al parsear respuesta: {}", e))?;
+
+    Ok(!rows.is_empty())
+}
+
 #[tauri::command]
 pub async fn get_oac_records(
     config: tauri::State<'_, AppConfig>,

@@ -160,26 +160,32 @@ pub fn stamp_pdf(pdf_path: &Path, seal_image_path: &Path) -> Result<(), String> 
         }
     }
 
-    let page_width = {
+    let (page_width, page_height) = {
         let page = doc.get_object(first_page_id)
             .map_err(|e| format!("Error al obtener página: {}", e))?;
         if let Ok(dict) = page.as_dict() {
             if let Ok(media_box) = dict.get(b"MediaBox") {
                 if let Ok(arr) = media_box.as_array() {
-                    arr.get(2).and_then(|v| match v {
+                    let w = arr.get(2).and_then(|v| match v {
                         Object::Integer(i) => Some(*i as f32),
                         Object::Real(f) => Some(*f as f32),
                         _ => None,
-                    }).unwrap_or(612.0)
-                } else { 612.0 }
-            } else { 612.0 }
-        } else { 612.0 }
+                    }).unwrap_or(612.0);
+                    let h = arr.get(3).and_then(|v| match v {
+                        Object::Integer(i) => Some(*i as f32),
+                        Object::Real(f) => Some(*f as f32),
+                        _ => None,
+                    }).unwrap_or(792.0);
+                    (w, h)
+                } else { (612.0, 792.0) }
+            } else { (612.0, 792.0) }
+        } else { (612.0, 792.0) }
     };
 
     let stamp_width = page_width * 0.15;
     let stamp_height = stamp_width * (img_height as f32 / img_width as f32);
-    let x = page_width - stamp_width - 30.0;
-    let y = 30.0;
+    let x = page_width - stamp_width - 50.0;                    // 20 pts más a la izquierda
+    let y = page_height / 2.0 - stamp_height / 2.0;            // centrado verticalmente
 
     let xobj_name = "SelloOAC";
 

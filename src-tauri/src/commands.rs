@@ -332,8 +332,65 @@ pub async fn process_pdfs(
             })
             .ok();
 
-        // --- Sellado del PDF si la carga externa fue exitosa ---
-        let sellado = if estado_carga == "enviado" || estado_carga == "pendiente" {
+        // --- Validación: determinar si el estado debe ser "revisar" ---
+        let mut motivos_revisar: Vec<String> = Vec::new();
+
+        // 1. Fecha futura
+        if let Some(fecha) = &oac.encabezado.fecha {
+            if let Some(es_futura) = es_fecha_futura(fecha) {
+                if es_futura {
+                    motivos_revisar.push("Fecha futura".to_string());
+                }
+            }
+        }
+
+        // 2. Campos obligatorios faltantes
+        let campo_vacio = |v: &Option<String>| v.as_deref().map_or(true, |s| s.trim().is_empty());
+
+        if campo_vacio(&oac.detalle_tecnico.codigo_falla) {
+            motivos_revisar.push("Falta codigo_falla".to_string());
+        }
+        if campo_vacio(&oac.detalle_tecnico.codigo_trabajo) {
+            motivos_revisar.push("Falta codigo_trabajo".to_string());
+        }
+        if oac.cierre.operarios.is_empty() {
+            motivos_revisar.push("Falta operarios".to_string());
+        }
+        if campo_vacio(&oac.cierre.empresa_contratista) {
+            motivos_revisar.push("Falta empresa_contratista".to_string());
+        }
+        if campo_vacio(&oac.cierre.hora_inicio) {
+            motivos_revisar.push("Falta hora_inicio".to_string());
+        }
+        if campo_vacio(&oac.cierre.hora_fin) {
+            motivos_revisar.push("Falta hora_fin".to_string());
+        }
+
+        // 3. Número de reclamo duplicado
+        if let Some(nr) = oac.encabezado.numero_reclamo.as_deref().filter(|s| !s.trim().is_empty()) {
+            match supabase::existe_numero_reclamo(&client, &config.supabase_url, &config.supabase_key, nr).await {
+                Ok(true) => {
+                    motivos_revisar.push(format!("numero_reclamo duplicado: {}", nr));
+                }
+                Ok(false) => {}
+                Err(e) => {
+                    eprintln!("[DEBUG] Error verificando numero_reclamo duplicado: {}", e);
+                }
+            }
+        }
+
+        let estado_final = if motivos_revisar.is_empty() {
+            estado_carga.clone()
+        } else {
+            eprintln!("[DEBUG] Estado cambiado a 'revisar' — motivos: {:?}", motivos_revisar);
+            "revisar".to_string()
+        };
+
+        // --- Sellado del PDF (se omite si el estado es "revisar") ---
+        let sellado = if estado_final == "revisar" {
+            eprintln!("[DEBUG] Sellado omitido — estado 'revisar'");
+            None
+        } else if estado_carga == "enviado" || estado_carga == "pendiente" {
             if let Some(fecha) = &oac.encabezado.fecha {
                 let color = stamping::determine_seal_color(fecha);
                 let seal_filename = format!("{}.png", color.to_uppercase());
@@ -413,7 +470,7 @@ pub async fn process_pdfs(
         eprintln!("[DEBUG] Guardando en Supabase...");
         let record = SupabaseRecord::from_oac(
             &oac,
-            estado_carga.clone(),
+            estado_final.clone(),
             filename.clone(),
             Some(new_path.to_string_lossy().to_string()),
             sellado,
@@ -432,7 +489,7 @@ pub async fn process_pdfs(
                 on_event
                     .send(ProcessEvent::Saved {
                         filename: filename.clone(),
-                        estado_carga,
+                        estado_carga: estado_final,
                     })
                     .ok();
             }
@@ -454,4 +511,21 @@ pub async fn process_pdfs(
         .send(ProcessEvent::Complete { processed, errors })
         .ok();
     Ok(())
+}
+
+/// Parses a date in DD/MM/YYYY format and returns whether it is in the future.
+/// Returns `None` if the date cannot be parsed.
+fn es_fecha_futura(fecha: &str) -> Option<bool> {
+    let parts: Vec<&str> = fecha.split('/').collect();
+    if parts.len() != 3 {
+        return None;
+    }
+    let day: u32 = parts[0].parse().ok()?;
+    let month: u32 = parts[1].parse().ok()?;
+    let year: i32 = parts[2].parse().ok()?;
+
+    let fecha_doc = chrono::NaiveDate::from_ymd_opt(year, month, day)?;
+    let hoy = chrono::Local::now().date_naive();
+
+    Some(fecha_doc > hoy)
 }

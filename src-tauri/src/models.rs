@@ -69,6 +69,8 @@ pub struct OacDetalleTecnico {
     #[serde(default)]
     pub ubicacion_falla: Option<String>,
     #[serde(default)]
+    pub codigo_falla: Option<String>,
+    #[serde(default)]
     pub codigo_trabajo: Option<String>,
     #[serde(default)]
     pub tipo_instalacion: Option<String>,
@@ -154,6 +156,7 @@ pub struct SupabaseRecord {
     pub motivo_reclamo: Option<String>,
     pub descripcion_falla: Option<String>,
     pub ubicacion_falla: Option<String>,
+    pub codigo_falla: Option<String>,
     pub codigo_trabajo: Option<String>,
     pub tipo_instalacion: Option<String>,
     pub elementos_afectados: Option<String>,
@@ -208,6 +211,7 @@ impl SupabaseRecord {
             motivo_reclamo: oac.detalle_tecnico.motivo_reclamo.clone(),
             descripcion_falla: oac.detalle_tecnico.descripcion_falla.clone(),
             ubicacion_falla: oac.detalle_tecnico.ubicacion_falla.clone(),
+            codigo_falla: oac.detalle_tecnico.codigo_falla.clone(),
             codigo_trabajo: oac.detalle_tecnico.codigo_trabajo.clone(),
             tipo_instalacion: oac.detalle_tecnico.tipo_instalacion.clone(),
             elementos_afectados: oac.detalle_tecnico.elementos_afectados.clone(),
@@ -283,6 +287,8 @@ pub struct OacRecord {
     pub descripcion_falla: Option<String>,
     #[serde(default)]
     pub ubicacion_falla: Option<String>,
+    #[serde(default)]
+    pub codigo_falla: Option<String>,
     #[serde(default)]
     pub codigo_trabajo: Option<String>,
     #[serde(default)]
