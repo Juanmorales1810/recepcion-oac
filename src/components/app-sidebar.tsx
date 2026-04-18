@@ -42,7 +42,7 @@ const data = {
     navSecondary: [
         {
             title: 'Configuración',
-            url: '#',
+            url: '/settings',
             icon: <HugeiconsIcon icon={Settings05Icon} strokeWidth={2} />,
         },
         {
@@ -56,7 +56,7 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     return (
-        <Sidebar collapsible="icon" {...props}>
+        <Sidebar collapsible="offcanvas" {...props}>
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>

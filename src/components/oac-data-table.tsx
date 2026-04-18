@@ -42,6 +42,7 @@ import {
     ArrowRight01Icon,
     ArrowRightDoubleIcon,
     SearchIcon,
+    AlertDiamondIcon,
 } from '@hugeicons/core-free-icons';
 
 import type { OacRecord } from '@/lib/types';
@@ -61,7 +62,7 @@ function EstadoBadge({ estado }: { estado: string }) {
             );
         case 'pendiente':
             return (
-                <Badge variant="outline" className="border-yellow-600/30 text-yellow-600">
+                <Badge variant="outline" className="border-orange-600/30 text-orange-600">
                     <HugeiconsIcon icon={Loading03Icon} strokeWidth={2} className="size-3" />
                     Pendiente
                 </Badge>
@@ -69,8 +70,15 @@ function EstadoBadge({ estado }: { estado: string }) {
         case 'error_carga':
             return (
                 <Badge variant="outline" className="border-red-600/30 text-red-600">
-                    <HugeiconsIcon icon={AlertCircleIcon} strokeWidth={2} className="size-3" />
+                    <HugeiconsIcon icon={AlertDiamondIcon} strokeWidth={2} className="size-3" />
                     Error
+                </Badge>
+            );
+        case 'revisar':
+            return (
+                <Badge variant="outline" className="border-yellow-600/30 text-yellow-600">
+                    <HugeiconsIcon icon={AlertCircleIcon} strokeWidth={2} className="size-3" />
+                    Revisar
                 </Badge>
             );
         default:
