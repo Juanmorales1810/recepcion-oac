@@ -98,6 +98,39 @@ pub async fn get_oac_records(
     Ok(records)
 }
 
+pub async fn update_oac_record_field(
+    client: &reqwest::Client,
+    supabase_url: &str,
+    supabase_key: &str,
+    id: i64,
+    updates: &serde_json::Value,
+) -> Result<(), String> {
+    let url = format!(
+        "{}/rest/v1/oac_records?id=eq.{}",
+        supabase_url.trim_end_matches('/'),
+        id
+    );
+
+    let response = client
+        .patch(&url)
+        .header("apikey", supabase_key)
+        .header("Authorization", format!("Bearer {}", supabase_key))
+        .header("Content-Type", "application/json")
+        .header("Prefer", "return=minimal")
+        .json(updates)
+        .send()
+        .await
+        .map_err(|e| format!("Error de red Supabase: {}", e))?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let text = response.text().await.unwrap_or_default();
+        return Err(format!("Supabase {} - {}", status, text));
+    }
+
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn get_oac_record(
     id: i64,

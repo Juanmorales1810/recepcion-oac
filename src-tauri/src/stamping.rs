@@ -182,10 +182,10 @@ pub fn stamp_pdf(pdf_path: &Path, seal_image_path: &Path) -> Result<(), String> 
         } else { (612.0, 792.0) }
     };
 
-    let stamp_width = page_width * 0.15;
+    let stamp_width = page_width * 0.25;
     let stamp_height = stamp_width * (img_height as f32 / img_width as f32);
     let x = page_width - stamp_width - 50.0;                    // 20 pts más a la izquierda
-    let y = page_height / 2.0 - stamp_height / 2.0;            // centrado verticalmente
+    let y = (page_height / 2.0 - stamp_height / 2.0) - 28.0;            // centrado verticalmente
 
     let xobj_name = "SelloOAC";
 

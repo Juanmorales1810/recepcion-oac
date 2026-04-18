@@ -153,6 +153,12 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             close_splashscreen,
             commands::process_pdfs,
+            commands::get_app_settings,
+            commands::save_app_settings,
+            commands::preview_pdf,
+            commands::stamp_single_pdf,
+            commands::update_oac_record,
+            commands::rename_oac_file,
             supabase::get_oac_records,
             supabase::get_oac_record
         ])

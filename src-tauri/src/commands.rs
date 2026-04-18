@@ -8,7 +8,7 @@ use tauri::State;
 
 use crate::config::AppConfig;
 use crate::gemini;
-use crate::models::{OacData, ProcessEvent, SupabaseRecord};
+use crate::models::{AppSettings, OacData, ProcessEvent, SupabaseRecord};
 use crate::stamping;
 use crate::supabase;
 
@@ -528,4 +528,188 @@ fn es_fecha_futura(fecha: &str) -> Option<bool> {
     let hoy = chrono::Local::now().date_naive();
 
     Some(fecha_doc > hoy)
+}
+
+// ---------------------------------------------------------------------------
+// Settings commands
+// ---------------------------------------------------------------------------
+
+#[tauri::command]
+pub async fn get_app_settings(app_handle: tauri::AppHandle) -> Result<AppSettings, String> {
+    let data_dir = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Error obteniendo directorio de datos: {}", e))?;
+    let settings_path = data_dir.join("settings.json");
+
+    if !settings_path.exists() {
+        return Ok(AppSettings::default());
+    }
+
+    let content = fs::read_to_string(&settings_path)
+        .map_err(|e| format!("Error leyendo configuración: {}", e))?;
+
+    serde_json::from_str(&content)
+        .map_err(|e| format!("Error parseando configuración: {}", e))
+}
+
+#[tauri::command]
+pub async fn save_app_settings(
+    app_handle: tauri::AppHandle,
+    settings: AppSettings,
+) -> Result<(), String> {
+    let data_dir = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Error obteniendo directorio de datos: {}", e))?;
+
+    fs::create_dir_all(&data_dir)
+        .map_err(|e| format!("Error creando directorio: {}", e))?;
+
+    let settings_path = data_dir.join("settings.json");
+    let content = serde_json::to_string_pretty(&settings)
+        .map_err(|e| format!("Error serializando configuración: {}", e))?;
+
+    fs::write(&settings_path, content)
+        .map_err(|e| format!("Error guardando configuración: {}", e))
+}
+
+// ---------------------------------------------------------------------------
+// PDF preview
+// ---------------------------------------------------------------------------
+
+#[tauri::command]
+pub async fn preview_pdf(file_path: String) -> Result<String, String> {
+    let path = Path::new(&file_path);
+    if !path.exists() {
+        return Err("El archivo no existe.".to_string());
+    }
+    let bytes = fs::read(path).map_err(|e| format!("Error leyendo PDF: {}", e))?;
+    Ok(base64::engine::general_purpose::STANDARD.encode(&bytes))
+}
+
+// ---------------------------------------------------------------------------
+// Stamp a single PDF
+// ---------------------------------------------------------------------------
+
+#[tauri::command]
+pub async fn stamp_single_pdf(
+    id: i64,
+    file_path: String,
+    fecha: String,
+    app_handle: tauri::AppHandle,
+    config: State<'_, AppConfig>,
+) -> Result<String, String> {
+    let pdf_path = Path::new(&file_path);
+    if !pdf_path.exists() {
+        return Err("El archivo PDF no existe.".to_string());
+    }
+
+    let color = stamping::determine_seal_color(&fecha);
+    let seal_filename = format!("{}.png", color.to_uppercase());
+
+    let seal_path = app_handle
+        .path()
+        .resource_dir()
+        .ok()
+        .map(|d| d.join("images").join(&seal_filename))
+        .filter(|p| p.exists())
+        .or_else(|| {
+            let dev = Path::new("images").join(&seal_filename);
+            if dev.exists() {
+                Some(dev)
+            } else {
+                None
+            }
+        })
+        .ok_or_else(|| format!("Imagen de sello no encontrada: {}", seal_filename))?;
+
+    stamping::stamp_pdf(pdf_path, &seal_path)?;
+
+    let client = reqwest::Client::new();
+    let updates = serde_json::json!({ "sellado": &color });
+    supabase::update_oac_record_field(
+        &client,
+        &config.supabase_url,
+        &config.supabase_key,
+        id,
+        &updates,
+    )
+    .await?;
+
+    Ok(color)
+}
+
+// ---------------------------------------------------------------------------
+// Update OAC record fields in Supabase
+// ---------------------------------------------------------------------------
+
+#[tauri::command]
+pub async fn update_oac_record(
+    id: i64,
+    updates: serde_json::Value,
+    config: State<'_, AppConfig>,
+) -> Result<(), String> {
+    let client = reqwest::Client::new();
+    supabase::update_oac_record_field(
+        &client,
+        &config.supabase_url,
+        &config.supabase_key,
+        id,
+        &updates,
+    )
+    .await
+}
+
+// ---------------------------------------------------------------------------
+// Rename OAC file on disk and update Supabase
+// ---------------------------------------------------------------------------
+
+#[tauri::command]
+pub async fn rename_oac_file(
+    id: i64,
+    current_path: String,
+    new_name: String,
+    config: State<'_, AppConfig>,
+) -> Result<String, String> {
+    let current = Path::new(&current_path);
+    if !current.exists() {
+        return Err("El archivo original no existe.".to_string());
+    }
+
+    let sanitized = sanitize_filename(&new_name);
+    let new_filename = if sanitized.to_lowercase().ends_with(".pdf") {
+        sanitized
+    } else {
+        format!("{}.pdf", sanitized)
+    };
+
+    let parent = current
+        .parent()
+        .ok_or("No se pudo obtener el directorio padre.")?;
+    let new_path = parent.join(&new_filename);
+
+    if new_path.exists() && new_path != current {
+        return Err(format!(
+            "Ya existe un archivo con el nombre: {}",
+            new_filename
+        ));
+    }
+
+    fs::rename(current, &new_path).map_err(|e| format!("Error al renombrar: {}", e))?;
+
+    let new_path_str = new_path.to_string_lossy().to_string();
+
+    let client = reqwest::Client::new();
+    let updates = serde_json::json!({ "archivo_destino": &new_path_str });
+    supabase::update_oac_record_field(
+        &client,
+        &config.supabase_url,
+        &config.supabase_key,
+        id,
+        &updates,
+    )
+    .await?;
+
+    Ok(new_path_str)
 }

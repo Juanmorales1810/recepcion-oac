@@ -364,3 +364,34 @@ pub enum ProcessEvent {
         errors: u32,
     },
 }
+
+// ---------------------------------------------------------------------------
+// App settings (persisted locally)
+// ---------------------------------------------------------------------------
+
+fn default_true() -> bool {
+    true
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AppSettings {
+    #[serde(default = "default_true")]
+    pub enable_stamping: bool,
+    #[serde(default)]
+    pub rename_only: bool,
+    #[serde(default)]
+    pub default_source_folder: Option<String>,
+    #[serde(default)]
+    pub default_output_folder: Option<String>,
+}
+
+impl Default for AppSettings {
+    fn default() -> Self {
+        Self {
+            enable_stamping: true,
+            rename_only: false,
+            default_source_folder: None,
+            default_output_folder: None,
+        }
+    }
+}
