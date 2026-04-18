@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './pages/__root'
 import { Route as IndexRouteImport } from './pages/index'
+import { Route as SettingsIndexRouteImport } from './pages/settings/index'
 import { Route as HistoryIndexRouteImport } from './pages/history/index'
 import { Route as CalendarIndexRouteImport } from './pages/calendar/index'
 import { Route as HistoryIdRouteImport } from './pages/history/$id'
@@ -17,6 +18,11 @@ import { Route as HistoryIdRouteImport } from './pages/history/$id'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HistoryIndexRoute = HistoryIndexRouteImport.update({
@@ -40,12 +46,14 @@ export interface FileRoutesByFullPath {
   '/history/$id': typeof HistoryIdRoute
   '/calendar/': typeof CalendarIndexRoute
   '/history/': typeof HistoryIndexRoute
+  '/settings/': typeof SettingsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/history/$id': typeof HistoryIdRoute
   '/calendar': typeof CalendarIndexRoute
   '/history': typeof HistoryIndexRoute
+  '/settings': typeof SettingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,20 @@ export interface FileRoutesById {
   '/history/$id': typeof HistoryIdRoute
   '/calendar/': typeof CalendarIndexRoute
   '/history/': typeof HistoryIndexRoute
+  '/settings/': typeof SettingsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/history/$id' | '/calendar/' | '/history/'
+  fullPaths: '/' | '/history/$id' | '/calendar/' | '/history/' | '/settings/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/history/$id' | '/calendar' | '/history'
-  id: '__root__' | '/' | '/history/$id' | '/calendar/' | '/history/'
+  to: '/' | '/history/$id' | '/calendar' | '/history' | '/settings'
+  id:
+    | '__root__'
+    | '/'
+    | '/history/$id'
+    | '/calendar/'
+    | '/history/'
+    | '/settings/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +82,7 @@ export interface RootRouteChildren {
   HistoryIdRoute: typeof HistoryIdRoute
   CalendarIndexRoute: typeof CalendarIndexRoute
   HistoryIndexRoute: typeof HistoryIndexRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -76,6 +92,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/': {
+      id: '/settings/'
+      path: '/settings'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/history/': {
@@ -107,6 +130,7 @@ const rootRouteChildren: RootRouteChildren = {
   HistoryIdRoute: HistoryIdRoute,
   CalendarIndexRoute: CalendarIndexRoute,
   HistoryIndexRoute: HistoryIndexRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
